@@ -61,8 +61,8 @@ RUN useradd -m -s /bin/zsh developer && \
     echo "developer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG docker developer 2>/dev/null || true
 
-# Install Claude Code globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude Code and AWS CDK CLI globally
+RUN npm install -g @anthropic-ai/claude-code aws-cdk
 
 # Install common Python development tools
 RUN pip install --no-cache-dir \

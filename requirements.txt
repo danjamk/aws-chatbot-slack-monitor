@@ -1,4 +1,23 @@
+# AWS CDK dependencies
+# Note: aws-cdk-lib includes all AWS service constructs including Chatbot
+aws-cdk-lib>=2.100.0
+constructs>=10.0.0
+
+# AWS SDK dependencies
+boto3>=1.28.0
+botocore>=1.31.0
+
+# Configuration management
+pyyaml>=6.0.1
+python-dotenv>=1.0.0
+
 # Development dependencies
 pytest>=7.0.0
+pytest-cov>=4.1.0
 black>=22.0.0
 flake8>=4.0.0
+mypy>=1.0.0
+
+# Type stubs for mypy
+boto3-stubs[budgets,chatbot,cloudwatch,sns,secretsmanager]>=1.28.0
+types-pyyaml>=6.0.0

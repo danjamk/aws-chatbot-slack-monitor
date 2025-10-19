@@ -174,6 +174,34 @@ for policy_arn in "${POLICIES[@]}"; do
 done
 
 # ============================================================================
+# Attach Inline Policy (if defined)
+# ============================================================================
+
+if [ -n "$CDK_INLINE_POLICY_NAME" ] && [ -n "$CDK_INLINE_POLICY_DOCUMENT" ]; then
+    echo ""
+    echo "Attaching inline policy: ${CDK_INLINE_POLICY_NAME}..."
+
+    # Check if inline policy already exists
+    if aws iam get-user-policy --user-name "$IAM_USERNAME" --policy-name "$CDK_INLINE_POLICY_NAME" &>/dev/null; then
+        echo -e "${GREEN}✓${NC} Inline policy already exists: ${CDK_INLINE_POLICY_NAME}"
+        echo "   Updating policy..."
+    else
+        echo "   Creating inline policy..."
+    fi
+
+    # Put (create or update) the inline policy
+    if aws iam put-user-policy \
+        --user-name "$IAM_USERNAME" \
+        --policy-name "$CDK_INLINE_POLICY_NAME" \
+        --policy-document "$CDK_INLINE_POLICY_DOCUMENT"; then
+        echo -e "${GREEN}✓${NC} Inline policy attached: ${CDK_INLINE_POLICY_NAME}"
+    else
+        echo -e "${RED}✗${NC} Failed to attach inline policy: ${CDK_INLINE_POLICY_NAME}"
+        echo "   This may cause CDK deployments to fail"
+    fi
+fi
+
+# ============================================================================
 # Create Access Key
 # ============================================================================
 

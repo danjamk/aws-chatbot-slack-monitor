@@ -1,298 +1,427 @@
-# Secure AI Python Development with PyCharm DevContainer Template
+# AWS Chatbot Slack Monitor
 
-AI-assisted coding with tools like Claude Code can be enormously powerful - but with that power comes risks.
-AI development tools don't always follow instructions exactly, sometimes due to poorly thought-out prompts, user error,
-or even AI bugs and implementation issues.
+> A comprehensive AWS cost monitoring and alerting solution that integrates AWS Budgets, CloudWatch, and AWS Chatbot to deliver real-time notifications to Slack channels.
 
-The best practice for secure AI development is to run AI coding assistants like Claude Code in a containerized development environment.
-This provides elevated isolation from your host system, ensuring that any mistakes or unexpected behavior during AI-assisted coding
-has less of a chance to impact your local files or development environments. Along with other protections, you can feel more comfortable leveraging this power.
+[![AWS CDK](https://img.shields.io/badge/AWS%20CDK-v2-orange)](https://aws.amazon.com/cdk/)
+[![Python](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-This **PyCharm DevContainer template** is specifically designed for secure Python development with JetBrains PyCharm Professional,
-Docker dev containers, and Claude Code as your AI coding assistant. This approach can be adapted to other IDEs
-(VS Code pioneered dev containers and has excellent support), other AI assistants, and alternative container solutions
-(Podman, Colima, Orbstack, etc.), as well as other programming languages.
+## Overview
 
-This project has a companion blog article you can find here: **[Containerized Development: My Security Layer for AI Coding Tools](https://medium.com/@dan.jam.kuhn/containerized-development-my-security-layer-for-ai-coding-tools-df48ac4af3e4)**
+This project helps teams stay on top of AWS spending by automatically sending cost and budget alerts to Slack channels. It's designed as a reusable template that can be deployed to any AWS account with minimal configuration, preventing runaway costs before they become a problem.
 
+### Key Features
 
-**Important**: Containerizing your Python development environment protects your host system, but doesn't protect your code,
-data, or remote systems. This template implements additional security best practices:
+- **Dual Slack Channel Strategy**: Critical alerts vs. heartbeat monitoring
+- **AWS Budget Integration**: Daily and monthly budget tracking with configurable thresholds
+- **CloudWatch Dashboard**: Comprehensive cost visualization and forecasting
+- **AWS Chatbot**: Interactive AWS CLI access directly from Slack
+- **Reusable SNS Topics**: Easy integration with other AWS infrastructure stacks
+- **Security First**: Read-only Chatbot permissions, no secrets in code
+- **Template-Based**: Simple YAML configuration for easy deployment
+- **Make Commands**: Simple `make deploy`, `make destroy`, `make validate` workflow
 
-- **✅ Read-only SSH keys for git repositories** - Project-specific deploy keys prevent accidental force pushes
-  - See [.devcontainer/docs/GITHUB_SETUP.md](.devcontainer/docs/GITHUB_SETUP.md) for setup
-- **✅ Project-specific AWS credentials** - Isolated IAM users with minimal permissions prevent production access
-  - See [.devcontainer/docs/AWS_SETUP.md](.devcontainer/docs/AWS_SETUP.md) for setup
-  - Automated setup script: `./scripts/setup-aws-iam-user.sh`
-- **✅ No host credential mounts** - Your personal ~/.aws and ~/.ssh are never exposed to the container
-  - See [.devcontainer/docs/MACOS_SECURITY.md](.devcontainer/docs/MACOS_SECURITY.md) for Docker file sharing
+## Architecture
 
-**All security features are optional** - the template works perfectly for vanilla Python development without AWS or GitHub SSH.
-Each feature gracefully degrades when not configured, with helpful status messages and setup guides.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      AWS Account                            │
+│                                                             │
+│  ┌──────────────┐    ┌─────────────┐    ┌──────────────┐  │
+│  │ AWS Budgets  │───▶│  SNS Topics │───▶│ AWS Chatbot  │  │
+│  │              │    │             │    │              │  │
+│  │ • Daily      │    │ • Critical  │    │ • Critical   │  │
+│  │ • Monthly    │    │ • Heartbeat │    │ • Heartbeat  │  │
+│  └──────────────┘    └─────────────┘    └──────────────┘  │
+│                             │                    │          │
+│                             ▼                    ▼          │
+│                      ┌─────────────┐    ┌──────────────┐  │
+│                      │  CloudWatch │    │   Secrets    │  │
+│                      │  Dashboard  │    │   Manager    │  │
+│                      └─────────────┘    └──────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+                     ┌─────────────────────┐
+                     │  Slack Workspace    │
+                     │                     │
+                     │  • #critical-alerts │
+                     │  • #aws-heartbeat   │
+                     └─────────────────────┘
+```
 
-## 🎯 Secured Python AI Development Template
+### Notification Routing
 
-This secure development environment template combines PyCharm Professional with DevContainers and integrated Claude Code
-for safe, reproducible AI-assisted Python development that works identically across all team members' machines.
+**Critical Channel** (Low Noise)
+- Monthly budget exceeded (100%+)
+- Severe infrastructure failures
+- Requires immediate action
 
-## 🚀 What This Secure AI Development Environment Provides
+**Heartbeat Channel** (Monitoring)
+- Daily spend reports
+- Monthly budget warnings (80%)
+- Minor alerts and system health
 
-- **🐍 Python 3.12** containerized development environment with complete dependency isolation
-- **🧠 Claude Code AI assistant** integrated and ready for secure AI-assisted coding
-- **🛡️ Complete host system protection** - no local Python/dependencies conflicts
-- **🔄 Reproducible team development** - identical environment across all machines
-- **📦 Persistent development storage** - configuration and cache preserved between sessions
-- **⚡ JetBrains PyCharm Professional** full IDE integration with secure container backend
-- **🔒 Secure AI coding practices** - isolated environment for safe AI development
-- **🐚 Zsh with Oh My Zsh** - syntax highlighting, autosuggestions, and git-aware prompt
-- **☁️ Optional AWS integration** - project-specific IAM users with automated setup
-- **🔑 Optional GitHub SSH** - read-only deploy keys for secure git operations
-- **📚 Comprehensive documentation** - detailed guides for all features and setup
+## Prerequisites
 
-## 📋 Prerequisites
+### Required
+- **AWS Account** with administrator access for initial setup
+- **Slack Workspace** with admin access to create channels
+- **Docker Desktop** (for DevContainer development environment)
+- **PyCharm Professional** (or VS Code with DevContainer support)
+- **Python 3.12+**
+- **Node.js 18+** (for AWS CDK)
 
-### Required Software for AI Development Setup
-- **PyCharm Professional** (Community Edition lacks DevContainer support for this template)
-- **Docker Desktop** (running and allocated 8GB+ RAM for containerized development)
-- **Anthropic Account** (for Claude Code AI assistant - free tier available)
+### Recommended
+- **Anthropic API Key** (for Claude Code development assistance)
+- Basic understanding of AWS CDK and Python
 
-### System Requirements
-- **macOS/Windows/Linux** with Docker support
-- **8GB+ RAM** for Docker allocation
-- **10GB+ free disk space** for container images
+## Quick Start
 
-## 🏃‍♂️ Quick Start Guide for Secure AI Development
+### 1. Clone and Setup
 
-### 1. Clone This Python DevContainer Template
 ```bash
-git clone https://github.com/your-username/pycharm-claude-devcontainer.git
-cd pycharm-claude-devcontainer
+git clone https://github.com/your-username/aws-chatbot-slack-monitor.git
+cd aws-chatbot-slack-monitor
 ```
 
-### 2. Launch PyCharm Professional with DevContainer Support
-1. **Launch PyCharm Professional**
-2. **File → Open** → Select the project directory
-3. **PyCharm will automatically detect** the `.devcontainer/devcontainer.json` configuration
-4. **Click "Reopen in Container"** when prompted for secure containerized development
+### 2. Configure Slack Workspace
 
-### 3. First Build (5-10 minutes)
-- PyCharm builds the container automatically
-- Monitor progress in **Services** tool window
-- Container downloads Python 3.12, installs tools, and configures environment
+Follow the detailed [Slack Setup Guide](docs/slack-setup.md) to:
+1. Create two Slack channels (`#critical-alerts` and `#aws-heartbeat`)
+2. Configure AWS Chatbot workspace integration
+3. Get your Slack Workspace ID and Channel IDs
 
-### 4. Configure Claude Code AI Assistant
-1. **Open PyCharm terminal** (automatically connected to secure container)
-2. **Run:** `claude`
-3. **Choose "Use Subscription"** (recommended for team development)
-4. **Authenticate** via browser with your Anthropic account for AI-assisted coding
+### 3. Configure Project Settings
 
-### 5. Configure Python Development Environment
-1. **Right-click** `src/main.py` → **Run**
-2. **Configure Python interpreter** when prompted:
-   - **Add Interpreter → System Interpreter**
-   - **Path:** `/usr/local/bin/python3`
-   - **Click OK**
-
-### 6. Start Secure AI-Assisted Development!
-- **Run Python code:** Right-click → Run
-- **AI coding assistance:** Type `claude` in terminal for intelligent code suggestions
-- **Automated testing:** `python -m pytest tests/`
-- **Code formatting:** `black src/ tests/`
-
-## 🏗️ Project Structure
-
-```
-├── .devcontainer/              # DevContainer configuration
-│   ├── devcontainer.json      # Container settings
-│   ├── Dockerfile             # Python 3.12 + Zsh + AWS CLI
-│   ├── setup.sh              # Post-creation setup
-│   ├── start.sh              # Smart AWS/GitHub detection
-│   ├── docs/                 # Comprehensive setup guides
-│   │   ├── AWS_SETUP.md      # AWS credential management
-│   │   ├── GITHUB_SETUP.md   # GitHub SSH configuration
-│   │   ├── MACOS_SECURITY.md # Docker file sharing security
-│   │   └── PYCHARM_TERMINAL.md # Zsh terminal setup
-│   └── ssh/                  # Project-specific SSH keys (optional)
-│       └── README.md         # SSH key instructions
-├── scripts/                   # Utility scripts
-│   ├── setup-aws-iam-user.sh # Automated AWS IAM user creation
-│   ├── cleanup-aws-iam-user.sh # AWS IAM user cleanup
-│   ├── aws-permissions-config.example.sh # Policy template
-│   └── README.md             # Scripts documentation
-├── src/                       # Python source code
-│   ├── __init__.py
-│   └── main.py               # Sample application
-├── tests/                     # Test files
-│   ├── __init__.py
-│   └── test_main.py          # Sample tests
-├── .env.example              # Environment variables template
-├── requirements.txt           # Python dependencies
-├── CLAUDE.md                 # AI assistant context
-└── README.md                 # This file
-```
-
-## 🛠️ Development Workflow
-
-### Daily Usage
-1. **Open PyCharm** → Project auto-connects to container
-2. **Develop normally** with full PyCharm features
-3. **Use Claude Code** for AI assistance: `claude`
-4. **Run/debug/test** as usual - all happens in container
-
-### Common Commands (in container terminal with Zsh)
 ```bash
-# Application
-python src/main.py                    # Run main application
+# Copy environment template
+cp config/.env.example .env
 
-# Testing
-python -m pytest tests/              # Run all tests
-python -m pytest tests/ -v          # Verbose output
-python-test                          # Alias for pytest (with zsh)
-
-# Code Quality
-black src/ tests/                    # Format code
-flake8 src/ tests/                   # Lint code
-mypy src/                           # Type checking
-python-format                        # Alias for black (with zsh)
-python-lint                          # Alias for flake8 (with zsh)
-
-# AWS (if configured)
-aws-whoami                          # Show AWS identity
-aws-account                         # Show AWS account ID
-
-# Claude Code
-claude                              # Start AI assistant
-claude --help                      # Get help
-
-# Shell Features (Zsh + Oh My Zsh)
-# - Syntax highlighting (commands turn green/red as you type)
-# - Auto-suggestions (gray text from history - press → to accept)
-# - Git-aware prompt (shows branch and status)
+# Edit .env with your Slack configuration
+vim .env
 ```
 
-### Container Management
-- **Rebuild:** Services → Docker → Container → Rebuild
-- **Restart:** Services → Docker → Container → Restart
-- **Logs:** Services → Docker → Container → View Logs
-
-## 🔧 Configuration
-
-### Persistent Storage
-The container preserves between restarts:
-- **Claude Code configuration** (`/home/developer/.claude`)
-- **Zsh command history** (`/commandhistory/.zsh_history`)
-- **Python package cache** (`/home/developer/.cache/pip`)
-
-### Optional Features
-Configure these features based on your project needs:
-- **AWS Integration** - See [.devcontainer/docs/AWS_SETUP.md](.devcontainer/docs/AWS_SETUP.md)
-  - Automated setup: `./scripts/setup-aws-iam-user.sh`
-- **GitHub SSH Keys** - See [.devcontainer/docs/GITHUB_SETUP.md](.devcontainer/docs/GITHUB_SETUP.md)
-- **PyCharm Terminal (Zsh)** - See [.devcontainer/docs/PYCHARM_TERMINAL.md](.devcontainer/docs/PYCHARM_TERMINAL.md)
-
-### Port Forwarding
-- **8000:** Development server
-- **5000:** Flask/API server
-- **3000:** Frontend server
-- **8080:** Alternative web server
-
-### Environment Variables
-- `PYTHONPATH=/workspace/src` - Clean imports from src/
-- `DEVCONTAINER=true` - Container environment indicator
-
-## 🚀 Advanced Usage
-
-### Installing Additional Python Packages
+Required `.env` variables:
 ```bash
-# Temporary (lost on rebuild)
-pip install package-name
-
-# Permanent (add to requirements.txt)
-echo "package-name>=1.0.0" >> requirements.txt
-# Then rebuild container
+SLACK_WORKSPACE_ID=T01234ABCDE
+SLACK_CRITICAL_CHANNEL_ID=C01234ABCDE
+SLACK_HEARTBEAT_CHANNEL_ID=C56789FGHIJ
+NOTIFICATION_EMAILS=team@example.com,admin@example.com
 ```
 
-### Adding Development Tools
-Edit `.devcontainer/Dockerfile` to add tools:
-```dockerfile
-RUN apt-get update && apt-get install -y \
-    your-new-tool \
-    && rm -rf /var/lib/apt/lists/*
+Edit `config/config.yaml` for budget settings:
+```yaml
+budgets:
+  daily_limit: 10.00      # Daily budget in USD
+  monthly_limit: 300.00   # Monthly budget in USD
+  monthly_threshold_warning: 80  # Warning at 80%
+  monthly_threshold_critical: 100  # Alert at 100%
+  currency: USD
+
+aws:
+  region: us-east-1
+  account_id: "123456789012"  # Your AWS account ID
 ```
 
-### Custom Setup Scripts
-- **setup.sh:** Runs once when container is first created
-- **start.sh:** Runs every time container starts
-- Customize these for project-specific setup
+### 4. Setup AWS Deployment Credentials
 
-## 🐛 Troubleshooting
+```bash
+# Configure AWS IAM user with required permissions
+bash scripts/aws-permissions-config.sh
 
-### Container Won't Build
-- **Check Docker:** Ensure Docker Desktop is running
-- **Memory:** Increase Docker memory to 8GB+
-- **Clean build:** Services → Container → Rebuild with --no-cache
+# Follow the prompts to create deployment credentials
+```
 
-### PyCharm Won't Connect
-- **Restart PyCharm** completely
-- **Check Services panel:** View → Tool Windows → Services
-- **Recreate container:** Remove and rebuild
+### 5. Install Dependencies
 
-### Claude Code Issues
-- **Reset config:** `rm -rf /home/developer/.claude/*`
-- **Restart Claude:** Run `claude` and reconfigure
-- **Check authentication:** Ensure Anthropic account is valid
+```bash
+# Python dependencies
+pip install -r requirements.txt
 
-### Python Interpreter Not Found
-- **Path:** Use `/usr/local/bin/python3`
-- **Recreate:** Add Interpreter → System Interpreter
-- **Verify:** Run `which python3` in container terminal
+# AWS CDK (if not already installed)
+npm install -g aws-cdk
+```
 
-## 🔐 Security Features
+### 6. Deploy to AWS
 
-This template implements multiple layers of security for safe AI-assisted development:
+```bash
+# Synthesize CloudFormation template (validate)
+make synth
 
-### Container Isolation
-- **No host system access** - AI assistant can't accidentally modify your local files
-- **Separate user context** - Runs as non-root `developer` user
-- **Volume isolation** - Only project directory is mounted
+# Preview changes
+make diff
 
-### Optional Credential Management
-All credential features are optional and gracefully degrade when not configured:
+# Deploy to AWS
+make deploy
 
-#### AWS Credentials (Optional)
-- **Project-specific IAM users** with minimal permissions
-- **Automated setup** via `./scripts/setup-aws-iam-user.sh`
-- **No host ~/.aws mount** - credentials generated from .env file
-- **Policy templates** for common project types (data pipelines, web apps, ML)
-- See [.devcontainer/docs/AWS_SETUP.md](.devcontainer/docs/AWS_SETUP.md)
+# Test notifications
+make validate
+```
 
-#### GitHub SSH Keys (Optional)
-- **Read-only deploy keys** prevent accidental force pushes
-- **Project-specific keys** in .devcontainer/ssh/
-- **No host ~/.ssh mount** - personal SSH keys remain isolated
-- See [.devcontainer/docs/GITHUB_SETUP.md](.devcontainer/docs/GITHUB_SETUP.md)
+## Configuration
 
-#### Docker File Sharing
-- **Restricted access** - only project directory shared
-- **No ~/.aws or ~/.ssh exposure** to containers
-- See [.devcontainer/docs/MACOS_SECURITY.md](.devcontainer/docs/MACOS_SECURITY.md)
+### Budget Configuration (`config/config.yaml`)
 
-### What's Protected
-- ✅ Host system (container isolation)
-- ✅ Personal AWS credentials (not mounted)
-- ✅ Personal SSH keys (not mounted)
-- ✅ Production environments (project-specific IAM users)
-- ✅ Git history (read-only SSH keys)
+```yaml
+budgets:
+  daily_limit: 10.00              # Daily spending limit
+  monthly_limit: 300.00           # Monthly spending limit
+  monthly_threshold_warning: 80   # Warning threshold (%)
+  monthly_threshold_critical: 100 # Critical threshold (%)
+  currency: USD
 
-## 📚 Additional Resources
+aws:
+  region: us-east-1              # Primary AWS region
+  account_id: "123456789012"     # Your AWS account ID
 
-- **[DevContainers Documentation](https://containers.dev/)**
-- **[PyCharm DevContainer Guide](https://www.jetbrains.com/help/pycharm/connect-to-devcontainer.html)**
-- **[Claude Code Documentation](https://docs.anthropic.com/claude/docs)**
-- **[Docker Best Practices](https://docs.docker.com/develop/best-practices/)**
+dashboard:
+  enabled: true
+  name: "CostMonitoring"
+  top_services_count: 10         # Number of services to show
+```
 
-## 📄 License
+### Environment Variables (`.env`)
 
-MIT License - feel free to use this template for any project.
+```bash
+# Slack Configuration (required)
+SLACK_WORKSPACE_ID=T01234ABCDE
+SLACK_CRITICAL_CHANNEL_ID=C01234ABCDE
+SLACK_HEARTBEAT_CHANNEL_ID=C56789FGHIJ
 
-**Happy coding with AI assistance! 🤖**
+# Email Notifications (optional)
+NOTIFICATION_EMAILS=team@example.com,admin@example.com
+
+# AWS Credentials (for deployment)
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=us-east-1
+CDK_DEFAULT_ACCOUNT=123456789012
+CDK_DEFAULT_REGION=us-east-1
+```
+
+## Usage
+
+### Make Commands
+
+```bash
+make deploy      # Deploy all stacks to AWS
+make destroy     # Tear down all stacks
+make diff        # Show deployment changes
+make synth       # Synthesize CloudFormation templates
+make validate    # Test Slack notification channels
+make update      # Update budgets after config changes
+```
+
+### Direct CDK Commands
+
+```bash
+cdk deploy                    # Deploy all stacks
+cdk deploy BudgetStack        # Deploy specific stack
+cdk diff                      # Show changes
+cdk synth                     # Generate CloudFormation
+cdk destroy                   # Remove all resources
+```
+
+### Updating Budgets
+
+1. Edit `config/config.yaml` with new budget values
+2. Run `make update` or `make deploy`
+3. Budgets will be updated without recreating resources
+
+### Testing Notifications
+
+```bash
+# Test both Slack channels
+make validate
+
+# Or manually publish test messages
+aws sns publish \
+  --topic-arn arn:aws:sns:us-east-1:123456789012:critical-alerts \
+  --message "Test critical alert"
+```
+
+## Slack Interaction
+
+Once deployed, you can interact with AWS from Slack:
+
+### View Cost Information
+```
+@aws cloudwatch get-metric-statistics --namespace AWS/Billing
+```
+
+### Check Budget Status
+```
+@aws budgets describe-budgets --account-id 123456789012
+```
+
+### List Alarms
+```
+@aws cloudwatch describe-alarms --state-value ALARM
+```
+
+All commands are **read-only** for security.
+
+## Integration with Other Stacks
+
+This monitoring system creates reusable SNS topics that other infrastructure can use:
+
+### Example: Integrate ECS Alerts
+
+```python
+from aws_cdk import aws_sns as sns
+from aws_cdk import Stack
+
+class MyECSStack(Stack):
+    def __init__(self, scope, id, **kwargs):
+        super().__init__(scope, id, **kwargs)
+
+        # Reference the critical alerts topic
+        critical_topic = sns.Topic.from_topic_arn(
+            self, "CriticalTopic",
+            topic_arn="arn:aws:sns:us-east-1:123456789012:critical-alerts"
+        )
+
+        # Send ECS service down alert to critical channel
+        ecs_alarm.add_alarm_action(
+            cloudwatch_actions.SnsAction(critical_topic)
+        )
+```
+
+See [Integration Guide](docs/integration-guide.md) for more examples.
+
+## Development
+
+### DevContainer Setup
+
+This project uses DevContainers for isolated, reproducible development:
+
+1. **Open in PyCharm**: File → Open → Select project
+2. **Reopen in Container**: PyCharm will prompt automatically
+3. **Wait for build**: First time takes 5-10 minutes
+4. **Start coding**: Full development environment ready
+
+See [.devcontainer/README.md](.devcontainer/README.md) for details.
+
+### Running Tests
+
+```bash
+# Run all tests
+python -m pytest tests/
+
+# Run with coverage
+python -m pytest tests/ --cov=cdk --cov-report=html
+
+# Validate CDK code
+cdk synth > /dev/null
+```
+
+### Code Quality
+
+```bash
+# Format code
+black cdk/ tests/
+
+# Lint code
+flake8 cdk/ tests/
+
+# Type checking
+mypy cdk/
+```
+
+## Troubleshooting
+
+### Deployment Issues
+
+**Problem**: `Error: Slack workspace not found`
+- **Solution**: Configure Slack workspace manually in AWS Console first
+- See [Slack Setup Guide](docs/slack-setup.md)
+
+**Problem**: `AccessDenied` errors during deployment
+- **Solution**: Check IAM permissions with `bash scripts/aws-permissions-config.sh`
+
+**Problem**: No notifications received in Slack
+- **Solution**: Verify channel IDs in `.env` match Slack channels
+- Run `make validate` to test
+
+### Budget Alert Issues
+
+**Problem**: Dashboard shows no billing data
+- **Solution**: Billing metrics only available in `us-east-1` region
+- Change deployment region to `us-east-1`
+
+**Problem**: Email notifications not working
+- **Solution**: Check inbox for SNS subscription confirmation emails
+- Click "Confirm Subscription" link
+
+### Chatbot Permission Issues
+
+**Problem**: Chatbot can't execute commands from Slack
+- **Solution**: Check IAM role has proper read policies
+- See IAM role in `chatbot_stack.py`
+
+## Project Structure
+
+```
+.
+├── cdk/                        # AWS CDK infrastructure code
+│   ├── app.py                 # CDK app entry point
+│   ├── stacks/                # CDK stack definitions
+│   │   ├── chatbot_stack.py   # Slack channel configurations
+│   │   ├── budget_stack.py    # AWS Budgets and alerts
+│   │   ├── monitoring_stack.py # CloudWatch dashboards
+│   │   └── sns_stack.py       # SNS topics
+│   └── constructs/            # Reusable CDK constructs
+├── config/                     # Configuration files
+│   ├── config.yaml            # Budget and AWS settings
+│   └── .env.example           # Environment template
+├── docs/                       # Documentation
+│   ├── project-plan.md        # Implementation plan
+│   ├── slack-setup.md         # Slack setup guide
+│   └── integration-guide.md   # Integration examples
+├── scripts/                    # Utility scripts
+│   ├── aws-permissions-config.sh  # AWS IAM setup
+│   └── deploy-secrets.py      # Secrets deployment
+├── tests/                      # Test files
+├── Makefile                    # Common commands
+└── README.md                   # This file
+```
+
+## Security Considerations
+
+- **No Secrets in Code**: All secrets in `.env` or AWS Secrets Manager
+- **Read-Only Chatbot**: Slack commands can only read, not modify resources
+- **Least Privilege IAM**: Minimal permissions for deployment and runtime
+- **Container Isolation**: Development in isolated DevContainer
+- **No Credential Mounting**: Project-specific AWS credentials only
+
+## Contributing
+
+This is a template project designed to be forked and customized. To contribute improvements:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly with `make validate`
+5. Submit a pull request
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with [AWS CDK](https://aws.amazon.com/cdk/)
+- DevContainer template from [pycharm-claude-devcontainer](https://github.com/danjamk/pycharm-claude-devcontainer)
+- AWS Chatbot service by [Amazon Web Services](https://aws.amazon.com/chatbot/)
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/your-username/aws-chatbot-slack-monitor/issues)
+- **Documentation**: See `docs/` directory
+- **AWS Chatbot Docs**: https://docs.aws.amazon.com/chatbot/
+- **AWS CDK Docs**: https://docs.aws.amazon.com/cdk/
+
+---
+
+**Stay on top of your AWS costs with real-time Slack notifications!** 💰📊

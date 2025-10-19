@@ -1,0 +1,98 @@
+# AWS Chatbot Slack Monitor Configuration
+# This file contains non-sensitive configuration and is safe to commit to git
+
+project:
+  name: aws-chatbot-monitor
+  environment: prod  # Options: dev, staging, prod
+  version: 1.0.0
+
+# Budget configuration
+budgets:
+  # Daily budget limit in USD
+  daily_limit: 10.00
+
+  # Monthly budget limit in USD
+  monthly_limit: 300.00
+
+  # Warning threshold percentage (triggers heartbeat channel alert)
+  monthly_threshold_warning: 80
+
+  # Critical threshold percentage (triggers critical channel alert)
+  monthly_threshold_critical: 100
+
+  # Budget currency
+  currency: USD
+
+  # Budget time unit (DAILY, MONTHLY, QUARTERLY, ANNUALLY)
+  time_unit_monthly: MONTHLY
+  time_unit_daily: DAILY
+
+# AWS configuration
+aws:
+  # Primary AWS region for deployment
+  # Note: CloudWatch billing metrics only available in us-east-1
+  region: us-east-1
+
+  # Your AWS account ID (12-digit number)
+  # Get it with: aws sts get-caller-identity --query Account --output text
+  account_id: "123456789012"  # CHANGE THIS
+
+  # Stack naming convention
+  stack_prefix: ChatbotMonitor
+
+# CloudWatch Dashboard configuration
+dashboard:
+  # Enable/disable dashboard creation
+  enabled: true
+
+  # Dashboard name
+  name: CostMonitoring
+
+  # Number of top services to display by cost
+  top_services_count: 10
+
+  # Dashboard auto-refresh interval (seconds)
+  # Set to 0 to disable auto-refresh
+  auto_refresh_seconds: 300  # 5 minutes
+
+  # Period for metrics (seconds)
+  # 3600 = 1 hour, 86400 = 1 day
+  metric_period_seconds: 86400
+
+# Notification configuration
+notifications:
+  # Enable email notifications (in addition to Slack)
+  email_enabled: true
+
+  # Enable Slack notifications
+  slack_enabled: true
+
+  # SNS topic naming
+  critical_topic_name: critical-alerts
+  heartbeat_topic_name: heartbeat-alerts
+
+  # Notification routing
+  # These define which notifications go to which channel
+  routing:
+    daily_budget_exceeded: heartbeat  # Options: critical, heartbeat
+    monthly_warning: heartbeat        # 80% threshold
+    monthly_exceeded: critical        # 100% threshold
+
+# Chatbot IAM configuration
+chatbot:
+  # Use read-only permissions for Slack commands
+  read_only_access: true
+
+  # Logging level (ERROR, INFO, NONE)
+  logging_level: INFO
+
+  # User role required (enforce that users assume a role)
+  user_role_required: false
+
+# Tags applied to all resources
+tags:
+  Project: AWS Chatbot Slack Monitor
+  ManagedBy: CDK
+  Environment: prod
+  CostCenter: Engineering
+  Owner: DevOps Team

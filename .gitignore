@@ -211,5 +211,12 @@ TODO.md
 
 # AWS credentials (never commit)
 .aws/
-# AWS permissions config (project-specific, not template)
-scripts/aws-permissions-config.sh
+
+# AWS CDK
+cdk.out/
+cdk.context.json
+*.asset.*
+
+# Git commit/PR message files (for read-only git access)
+GIT-COMMIT-MSG.md
+GIT-PULLREQUEST-MSG.md
