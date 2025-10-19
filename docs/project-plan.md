@@ -78,7 +78,7 @@ This document outlines the detailed implementation plan for the AWS Chatbot Slac
 - [ ] Update scripts/aws-permissions-config.sh
 - [ ] Setup project directory structure
 - [ ] Create config/config.yaml template
-- [ ] Create config/.env.example
+- [ ] Create .env.example in root directory
 - [ ] Update requirements.txt with CDK dependencies
 - [ ] Create Makefile with common commands
 - [ ] Initialize CDK project structure
@@ -332,7 +332,7 @@ managed_policies = [
   - [ ] AWS settings
   - [ ] Dashboard configuration
   - [ ] Notification settings
-- [ ] Create `config/.env.example` with all variables
+- [ ] Create `.env.example` in root with all variables
 - [ ] Implement config validation
   - [ ] YAML schema validation
   - [ ] Required field checks

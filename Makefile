@@ -1,3 +1,6 @@
+# Use bash for all recipe commands
+SHELL := /bin/bash
+
 .PHONY: help install synth diff deploy deploy-secrets update destroy validate test format lint clean bootstrap
 
 # Default target - show help
@@ -45,12 +48,15 @@ bootstrap:
 	cdk bootstrap
 	@echo "✅ CDK bootstrap complete"
 
-# Deploy secrets to AWS Secrets Manager
+# Deploy secrets to AWS Secrets Manager (OPTIONAL - no longer required)
+# Slack IDs are now configured in config/config.yaml
+# This script is kept for deploying other secrets if needed
 deploy-secrets:
-	@echo "Deploying secrets to AWS Secrets Manager..."
+	@echo "⚠️  NOTE: Slack IDs are now in config/config.yaml (not Secrets Manager)"
+	@echo "This command is optional and only needed for other secrets"
 	@if [ ! -f .env ]; then \
 		echo "❌ Error: .env file not found"; \
-		echo "Copy config/.env.example to .env and fill in your values"; \
+		echo "Copy .env.example to .env and fill in your values"; \
 		exit 1; \
 	fi
 	python scripts/deploy-secrets.py
@@ -68,7 +74,7 @@ diff:
 	cdk diff
 
 # Deploy all stacks
-deploy: deploy-secrets
+deploy:
 	@echo "Deploying all stacks to AWS..."
 	@echo "⚠️  This will create real AWS resources that may incur costs"
 	@read -p "Continue? [y/N] " -n 1 -r; \

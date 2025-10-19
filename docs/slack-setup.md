@@ -62,7 +62,7 @@ Copy the example environment file and add your Slack IDs:
 
 ```bash
 # In your project root
-cp config/.env.example .env
+cp .env.example .env
 ```
 
 Edit `.env` and add your Slack configuration:

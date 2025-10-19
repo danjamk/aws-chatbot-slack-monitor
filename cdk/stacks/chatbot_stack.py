@@ -5,20 +5,17 @@ This stack creates AWS Chatbot configurations for Slack channels:
 - Critical alerts channel (low noise, immediate action)
 - Heartbeat alerts channel (monitoring, warnings, daily reports)
 
-The stack reads Slack configuration from AWS Secrets Manager and
-subscribes the Chatbot to the SNS topics created by the SNS stack.
+The stack reads Slack configuration from config.yaml and subscribes
+the Chatbot to the SNS topics created by the SNS stack.
 
 Prerequisites:
 - Slack workspace must be authorized in AWS Console (one-time manual step)
-- Secrets deployed to AWS Secrets Manager via deploy-secrets.py
+- Slack IDs configured in config.yaml
 """
 
-from typing import List
-
-from aws_cdk import Stack, CfnOutput, SecretValue
+from aws_cdk import Stack, CfnOutput
 from aws_cdk import aws_chatbot as chatbot
 from aws_cdk import aws_iam as iam
-from aws_cdk import aws_secretsmanager as secretsmanager
 from aws_cdk import aws_sns as sns
 from constructs import Construct
 
@@ -52,8 +49,13 @@ class ChatbotStack(Stack):
         self.critical_topic = critical_topic
         self.heartbeat_topic = heartbeat_topic
 
-        # Get Slack configuration from Secrets Manager
-        self.slack_config = self._get_slack_config()
+        # Validate Slack configuration is present
+        if "slack" not in config:
+            raise ValueError(
+                "Slack configuration missing from config.yaml. "
+                "Add slack.workspace_id, slack.critical_channel_id, "
+                "and slack.heartbeat_channel_id"
+            )
 
         # Create IAM role for Chatbot (read-only)
         self.chatbot_role = self._create_chatbot_role()
@@ -61,29 +63,6 @@ class ChatbotStack(Stack):
         # Create Slack channel configurations
         self._create_critical_channel_config()
         self._create_heartbeat_channel_config()
-
-    def _get_slack_config(self) -> secretsmanager.ISecret:
-        """
-        Get Slack configuration from AWS Secrets Manager.
-
-        Returns:
-            Secret containing Slack workspace and channel IDs
-        """
-        # Get secret name from config
-        project_name = self.config["project"]["name"]
-        environment = self.config["project"]["environment"]
-        secret_name = f"{project_name}/{environment}/slack-config"
-
-        # Reference existing secret (created by deploy-secrets.py)
-        # Note: This uses from_secret_name_v2 which doesn't validate
-        # that the secret exists during synthesis
-        slack_secret = secretsmanager.Secret.from_secret_name_v2(
-            self,
-            "SlackConfig",
-            secret_name=secret_name,
-        )
-
-        return slack_secret
 
     def _create_chatbot_role(self) -> iam.Role:
         """
@@ -128,25 +107,16 @@ class ChatbotStack(Stack):
         project_name = self.config["project"]["name"]
         environment = self.config["project"]["environment"]
 
-        # Note: We need to parse the secret to get individual values
-        # Since we can't parse secrets during synthesis, we'll use a custom resource
-        # or Lambda function in a real deployment. For now, we'll document this.
-
-        # For CDK synthesis to work, we create the configuration with placeholders
-        # that will be resolved at deploy time
+        # Create Slack channel configuration
+        # Slack IDs from config.yaml (not sensitive, just identifiers)
         critical_config = chatbot.CfnSlackChannelConfiguration(
             self,
             "CriticalChannelConfig",
             configuration_name=f"{project_name}-{environment}-critical",
             iam_role_arn=self.chatbot_role.role_arn,
-            # Slack workspace ID - must be set manually or via custom resource
-            # This will fail during actual deployment until workspace is authorized
-            slack_workspace_id=self.slack_config.secret_value_from_json(
-                "workspace_id"
-            ).unsafe_unwrap(),
-            slack_channel_id=self.slack_config.secret_value_from_json(
-                "critical_channel_id"
-            ).unsafe_unwrap(),
+            # Slack workspace and channel IDs from config.yaml
+            slack_workspace_id=self.config["slack"]["workspace_id"],
+            slack_channel_id=self.config["slack"]["critical_channel_id"],
             # Subscribe to critical alerts topic
             sns_topic_arns=[self.critical_topic.topic_arn],
             # Logging configuration
@@ -172,13 +142,9 @@ class ChatbotStack(Stack):
             "HeartbeatChannelConfig",
             configuration_name=f"{project_name}-{environment}-heartbeat",
             iam_role_arn=self.chatbot_role.role_arn,
-            # Slack workspace ID
-            slack_workspace_id=self.slack_config.secret_value_from_json(
-                "workspace_id"
-            ).unsafe_unwrap(),
-            slack_channel_id=self.slack_config.secret_value_from_json(
-                "heartbeat_channel_id"
-            ).unsafe_unwrap(),
+            # Slack workspace and channel IDs from config.yaml
+            slack_workspace_id=self.config["slack"]["workspace_id"],
+            slack_channel_id=self.config["slack"]["heartbeat_channel_id"],
             # Subscribe to heartbeat alerts topic
             sns_topic_arns=[self.heartbeat_topic.topic_arn],
             # Logging configuration

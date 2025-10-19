@@ -37,6 +37,7 @@ from stacks.sns_stack import SnsStack
 from stacks.budget_stack import BudgetStack
 from stacks.chatbot_stack import ChatbotStack
 from stacks.monitoring_stack import MonitoringStack
+from stacks.daily_cost_stack import DailyCostStack
 
 # Instantiate SNS Stack (foundation for all notifications)
 sns_stack = SnsStack(
@@ -73,6 +74,16 @@ monitoring_stack = MonitoringStack(
     config=config,
     env=aws_env,
 )
+
+# Instantiate Daily Cost Report Stack (optional, based on config)
+if config.get("daily_report", {}).get("enabled", False):
+    daily_cost_stack = DailyCostStack(
+        app,
+        f"{config['aws']['stack_prefix']}DailyCostStack",
+        config=config,
+        heartbeat_topic=sns_stack.get_heartbeat_topic(),
+        env=aws_env,
+    )
 
 # Apply tags to all stacks
 if "tags" in config:

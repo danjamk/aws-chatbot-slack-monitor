@@ -86,7 +86,7 @@ Create your `.env` file from the template:
 
 ```bash
 # Copy the example
-cp config/.env.example .env
+cp .env.example .env
 
 # Edit with your actual values
 vim .env  # or your preferred editor

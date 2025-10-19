@@ -96,7 +96,7 @@ Follow the detailed [Slack Setup Guide](docs/slack-setup.md) to:
 
 ```bash
 # Copy environment template
-cp config/.env.example .env
+cp .env.example .env
 
 # Edit .env with your Slack configuration
 vim .env

@@ -78,6 +78,26 @@ notifications:
     monthly_warning: heartbeat        # 80% threshold
     monthly_exceeded: critical        # 100% threshold
 
+# Slack configuration
+slack:
+  # Slack Workspace ID (starts with T)
+  # Get from: https://app.slack.com/client/T01234ABCDE/... (part after /client/)
+  workspace_id: T09MR3DRVG8  # CHANGE THIS to your workspace ID
+
+  # Slack Channel IDs (start with C)
+  # Get from: Right-click channel → View channel details → Channel ID at bottom
+  critical_channel_id: C09N63G6F3J    # CHANGE THIS to your critical channel
+  heartbeat_channel_id: C09MBQUPMK4   # CHANGE THIS to your heartbeat channel
+
+# Daily cost report configuration
+daily_report:
+  # Enable/disable daily cost reports
+  enabled: true
+
+  # Hour to send daily report (UTC, 0-23)
+  # 8 = 8 AM UTC (3 AM EST, 12 AM PST)
+  schedule_hour_utc: 8
+
 # Chatbot IAM configuration
 chatbot:
   # Use read-only permissions for Slack commands
