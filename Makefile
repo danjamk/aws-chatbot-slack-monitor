@@ -111,9 +111,15 @@ destroy:
 	fi
 
 # Test Slack notification channels
+# Note: Creates a temporary CloudWatch alarm that triggers immediately
+# This tests end-to-end notification delivery to Slack
 validate:
-	@echo "Testing Slack notification channels..."
-	@bash scripts/validate-notifications.sh
+	@echo "Testing Slack notifications with CloudWatch alarm..."
+	@bash scripts/test-slack-with-alarm.sh
+	@echo ""
+	@echo "⏳ Wait 1-2 minutes, then check your #aws-critical-alerts Slack channel"
+	@echo "To clean up the test alarm:"
+	@echo "  aws cloudwatch delete-alarms --alarm-names ChatbotTest-DeleteMe"
 
 # Run unit tests
 test:
