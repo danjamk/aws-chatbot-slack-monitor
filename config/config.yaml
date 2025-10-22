@@ -1,10 +1,11 @@
-# AWS Chatbot Slack Monitor Configuration
+# AWS Alert Intelligence System Configuration
 # This file contains non-sensitive configuration and is safe to commit to git
+# Sensitive values (AWS credentials, Slack webhooks, etc.) should be in .env file
 
 project:
-  name: aws-chatbot-monitor
-  environment: prod  # Options: dev, staging, prod
-  version: 1.0.0
+  name: aws-alert-intelligence
+  environment: prod  # Options: personal-dev, startup-prod, prod
+  version: 2.0.0  # Phase 1: AI-powered alert analysis
 
 # Budget configuration
 budgets:
@@ -67,6 +68,9 @@ notifications:
   # Enable Slack notifications
   slack_enabled: true
 
+  # Slack configuration (workspace ID, channel IDs, webhooks) is in .env file
+  # See .env.example for required variables
+
   # SNS topic naming
   critical_topic_name: critical-alerts
   heartbeat_topic_name: heartbeat-alerts
@@ -78,16 +82,80 @@ notifications:
     monthly_warning: heartbeat        # 80% threshold
     monthly_exceeded: critical        # 100% threshold
 
-# Slack configuration
-slack:
-  # Slack Workspace ID (starts with T)
-  # Get from: https://app.slack.com/client/T01234ABCDE/... (part after /client/)
-  workspace_id: T09MR3DRVG8  # CHANGE THIS to your workspace ID
+# AI Alert Analysis Configuration
+# Controls which alerts receive AI-powered analysis (costs LLM tokens)
+ai_analysis:
+  # Enable/disable AI analysis globally
+  enabled: true
 
-  # Slack Channel IDs (start with C)
-  # Get from: Right-click channel → View channel details → Channel ID at bottom
-  critical_channel_id: C09N63G6F3J    # CHANGE THIS to your critical channel
-  heartbeat_channel_id: C09MBQUPMK4   # CHANGE THIS to your heartbeat channel
+  # LLM provider and model settings are in .env file
+  # (LLM_PROVIDER, LLM_MODEL_ID, LLM_TEMPERATURE, LLM_MAX_TOKENS)
+
+  # Alert routing rules - which alerts get AI analysis
+  rules:
+    # Budget alerts
+    analyze_budget_warning: true         # ≥80% monthly budget
+    analyze_budget_critical: true        # ≥100% monthly budget
+    analyze_daily_budget_exceeded: true  # Daily budget exceeded
+    analyze_daily_budget_report: false   # Skip AI for daily cost summaries (raw data is fine)
+
+    # CloudWatch alarms
+    analyze_cloudwatch_alarm_error: true    # ERROR state alarms
+    analyze_cloudwatch_alarm_warning: true  # WARN state alarms
+    analyze_cloudwatch_alarm_info: false    # INFO state alarms
+
+    # EMR events (for user's R&D use case)
+    analyze_emr_cluster_failure: true       # EMR cluster terminated with errors
+    analyze_emr_step_failure: true          # EMR step failures
+    analyze_emr_bootstrap_failure: true     # EMR bootstrap action failures
+
+    # Custom events
+    analyze_custom_error_events: true       # Custom error events from EventBridge
+    analyze_custom_warning_events: false    # Custom warning events
+
+  # Blacklist - message patterns to NEVER analyze (even if rules say yes)
+  # Use for known false positives or low-priority alerts
+  blacklist:
+    - "HealthCheckSuccess"
+    - "MaintenanceWindowStarted"
+    # - "TestAlarm-DeleteMe"  # Uncomment to ignore test alarms
+
+  # Whitelist - message patterns to ALWAYS analyze (overrides blacklist)
+  # Use for critical patterns that must always be analyzed
+  whitelist:
+    - "ProductionFailure"
+    - "DataLoss"
+    - "SecurityBreach"
+
+# EMR Monitoring Configuration
+# Specific to user's R&D use case: EMR jobs failing without proper error reporting
+emr:
+  # Enable EMR-specific monitoring
+  enabled: true
+
+  # EMR cluster patterns to monitor (regex)
+  # Empty list = monitor all clusters
+  monitored_clusters:
+    - ".*"  # Monitor all clusters
+
+  # EMR notification routing
+  routing:
+    cluster_failure: critical    # Cluster terminated with errors → critical channel
+    step_failure: critical       # Step failure → critical channel
+    bootstrap_failure: critical  # Bootstrap failure → critical channel
+    cluster_terminated: heartbeat  # Normal termination → heartbeat
+    cluster_started: heartbeat   # Cluster started → heartbeat
+
+  # EMR tools configuration
+  tools:
+    # Maximum number of failed steps to retrieve
+    max_failed_steps: 10
+
+    # Maximum log lines to fetch per step
+    max_log_lines: 100
+
+    # Include Spark application logs in analysis
+    include_spark_logs: true
 
 # Daily cost report configuration
 daily_report:

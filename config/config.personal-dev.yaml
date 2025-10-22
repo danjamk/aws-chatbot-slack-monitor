@@ -1,0 +1,93 @@
+# Personal Development Environment Configuration
+# Use case: Personal R&D with EMR experimentation
+# Daily budget: $1/day with small bursts for testing
+
+project:
+  name: aws-alert-intelligence
+  environment: personal-dev
+  version: 2.0.0
+
+# Budget configuration - Personal R&D limits
+budgets:
+  daily_limit: 1.00      # $1/day for normal work
+  monthly_limit: 50.00   # ~$30/month + $20 buffer for burst testing
+  monthly_threshold_warning: 60   # Alert at 60% ($30)
+  monthly_threshold_critical: 100 # Alert at 100% ($50)
+  currency: USD
+  time_unit_monthly: MONTHLY
+  time_unit_daily: DAILY
+
+aws:
+  region: us-east-1
+  account_id: "123456789012"  # Your personal AWS account
+  stack_prefix: AlertIntel
+
+dashboard:
+  enabled: true
+  name: PersonalDevCostMonitoring
+  top_services_count: 5  # Smaller dashboard for personal use
+  auto_refresh_seconds: 300
+  metric_period_seconds: 86400
+
+notifications:
+  email_enabled: false  # Just Slack for personal dev
+  slack_enabled: true
+  critical_topic_name: critical-alerts
+  heartbeat_topic_name: heartbeat-alerts
+  routing:
+    daily_budget_exceeded: critical  # More aggressive - daily overrun is critical
+    monthly_warning: heartbeat
+    monthly_exceeded: critical
+
+# AI analysis - Analyze everything for personal learning
+ai_analysis:
+  enabled: true
+  rules:
+    analyze_budget_warning: true
+    analyze_budget_critical: true
+    analyze_daily_budget_exceeded: true  # Learn from budget overruns
+    analyze_daily_budget_report: false   # Still skip daily summaries
+    analyze_cloudwatch_alarm_error: true
+    analyze_cloudwatch_alarm_warning: true
+    analyze_cloudwatch_alarm_info: false
+    analyze_emr_cluster_failure: true
+    analyze_emr_step_failure: true
+    analyze_emr_bootstrap_failure: true
+    analyze_custom_error_events: true
+    analyze_custom_warning_events: true  # Analyze more in dev
+  blacklist:
+    - "HealthCheckSuccess"
+  whitelist:
+    - "EMR"  # Always analyze EMR issues
+
+# EMR monitoring - Critical for personal R&D
+emr:
+  enabled: true
+  monitored_clusters:
+    - ".*"  # Monitor all clusters
+  routing:
+    cluster_failure: critical
+    step_failure: critical
+    bootstrap_failure: critical
+    cluster_terminated: heartbeat
+    cluster_started: heartbeat
+  tools:
+    max_failed_steps: 10
+    max_log_lines: 200  # More logs for debugging
+    include_spark_logs: true
+
+daily_report:
+  enabled: true
+  schedule_hour_utc: 12  # Noon UTC = 7am EST = 4am PST
+
+chatbot:
+  read_only_access: true
+  logging_level: INFO
+  user_role_required: false
+
+tags:
+  Project: AWS Alert Intelligence
+  ManagedBy: CDK
+  Environment: personal-dev
+  CostCenter: Personal
+  Owner: Developer
