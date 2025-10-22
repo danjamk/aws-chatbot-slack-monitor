@@ -8,6 +8,8 @@ This stack creates:
 """
 
 from aws_cdk import Stack, Duration, CfnOutput
+from aws_cdk import aws_cloudwatch as cloudwatch
+from aws_cdk import aws_cloudwatch_actions as cw_actions
 from aws_cdk import aws_events as events
 from aws_cdk import aws_events_targets as targets
 from aws_cdk import aws_iam as iam
@@ -45,6 +47,9 @@ class DailyCostStack(Stack):
         # Create Lambda function for daily cost reporting
         self.cost_function = self._create_cost_function()
 
+        # Create CloudWatch alarm for daily cost reports
+        self._create_cost_alarm()
+
         # Create EventBridge rule for daily schedule
         self._create_daily_schedule()
 
@@ -69,6 +74,17 @@ class DailyCostStack(Stack):
                 actions=[
                     "ce:GetCostAndUsage",
                     "ce:GetCostForecast",
+                ],
+                resources=["*"],
+            )
+        )
+
+        # Add CloudWatch permissions for metrics and alarms
+        lambda_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "cloudwatch:PutMetricData",
+                    "cloudwatch:SetAlarmState",
                 ],
                 resources=["*"],
             )
@@ -140,6 +156,44 @@ class DailyCostStack(Stack):
             description="Schedule for daily cost reports",
         )
 
+    def _create_cost_alarm(self) -> None:
+        """
+        Create CloudWatch alarm for daily cost reports.
+
+        The Lambda function will manually trigger this alarm's state to send
+        notifications to Slack via AWS Chatbot (which only displays certain
+        message types like CloudWatch alarms).
+        """
+        # Create a custom metric for daily cost reports
+        metric = cloudwatch.Metric(
+            namespace="AWS/Billing",
+            metric_name="DailyCostReport",
+            statistic="Average",
+            period=Duration.days(1),
+        )
+
+        # Create alarm that Lambda will manually trigger
+        alarm = cloudwatch.Alarm(
+            self,
+            "DailyCostReportAlarm",
+            alarm_name="DailyCostReportAlarm",
+            alarm_description="Daily AWS cost report (triggered by Lambda)",
+            metric=metric,
+            threshold=0,  # Dummy threshold - Lambda sets state manually
+            evaluation_periods=1,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+
+        # Add SNS action so alarm notifications go to Slack
+        alarm.add_alarm_action(cw_actions.SnsAction(self.heartbeat_topic))
+
+        CfnOutput(
+            self,
+            "DailyCostAlarmName",
+            value=alarm.alarm_name,
+            description="CloudWatch alarm for daily cost reports",
+        )
+
     def _get_lambda_code(self) -> str:
         """
         Get Lambda function code for daily cost reporting.
@@ -157,6 +211,10 @@ import boto3
 
 ce_client = boto3.client('ce')
 sns_client = boto3.client('sns')
+cw_client = boto3.client('cloudwatch')
+
+# CloudWatch alarm name for daily cost reports
+ALARM_NAME = "DailyCostReportAlarm"
 
 def handler(event, context):
     '''Lambda handler for daily cost reporting.'''
@@ -259,58 +317,71 @@ def handler(event, context):
 
         services_text = "\\n".join(service_lines) if service_lines else "  • No significant costs"
 
-        # Build message
-        message = f'''📊 Daily AWS Cost Report
+        # Build message - formatted for CloudWatch alarm
+        message = f'''📊 Daily AWS Cost Report for {yesterday.strftime("%B %d, %Y")}
 
-**{yesterday.strftime("%B %d, %Y")}**
+{daily_emoji} Yesterday: ${yesterday_cost:.2f} {currency} (Budget: ${daily_budget:.2f}, {daily_budget_pct:.1f}%)
+{monthly_emoji} Month-to-Date: ${mtd_cost:.2f} {currency} (Budget: ${monthly_budget:.2f}, {monthly_budget_pct:.1f}%)
 
-{daily_emoji} **Yesterday**: ${yesterday_cost:.2f} {currency}
-   Budget: ${daily_budget:.2f} ({daily_budget_pct:.1f}%)
-
-{monthly_emoji} **Month-to-Date**: ${mtd_cost:.2f} {currency}
-   Budget: ${monthly_budget:.2f} ({monthly_budget_pct:.1f}%)
-
-**Top Services (Yesterday)**:
+Top Services (Yesterday):
 {services_text}
 
-**Status**:
-🟢 Under budget  |  🟡 Approaching limit  |  🔴 Over budget
+Status: 🟢 Under budget | 🟡 Approaching limit | 🔴 Over budget
 
----
-💡 View dashboard: CloudWatch → Dashboards
-📈 Detailed costs: AWS Cost Explorer
-'''
+View details: CloudWatch Dashboards | AWS Cost Explorer'''
 
-        # Publish to SNS
-        response = sns_client.publish(
-            TopicArn=sns_topic_arn,
-            Subject=f"Daily AWS Cost: ${yesterday_cost:.2f} ({yesterday.strftime('%b %d')})",
-            Message=message
+        # Put custom metric for daily cost
+        cw_client.put_metric_data(
+            Namespace='AWS/Billing',
+            MetricData=[
+                {
+                    'MetricName': 'DailyCostReport',
+                    'Value': yesterday_cost,
+                    'Unit': 'None',
+                    'Timestamp': datetime.now()
+                }
+            ]
         )
 
-        print(f"Published daily cost report: ${yesterday_cost:.2f}")
-        print(f"SNS Message ID: {response['MessageId']}")
+        # Trigger CloudWatch alarm with custom state
+        # This creates an alarm notification that AWS Chatbot will display
+        try:
+            cw_client.set_alarm_state(
+                AlarmName=ALARM_NAME,
+                StateValue='ALARM',
+                StateReason=message,
+                StateReasonData=json.dumps({
+                    'version': '1.0',
+                    'queryDate': str(datetime.now()),
+                    'metricData': {
+                        'yesterdayCost': yesterday_cost,
+                        'mtdCost': mtd_cost,
+                        'dailyBudget': daily_budget,
+                        'monthlyBudget': monthly_budget
+                    }
+                })
+            )
+            print(f"Triggered CloudWatch alarm with daily cost report: ${yesterday_cost:.2f}")
+        except cw_client.exceptions.ResourceNotFoundException:
+            # Alarm doesn't exist yet - send via SNS as fallback
+            print(f"Alarm {ALARM_NAME} not found, using SNS fallback")
+            sns_client.publish(
+                TopicArn=sns_topic_arn,
+                Subject=f"📊 Daily AWS Cost: ${yesterday_cost:.2f}",
+                Message=message
+            )
 
         return {
             'statusCode': 200,
             'body': json.dumps({
                 'yesterday_cost': yesterday_cost,
-                'mtd_cost': mtd_cost,
-                'message_id': response['MessageId']
+                'mtd_cost': mtd_cost
             })
         }
 
     except Exception as e:
         error_msg = f"Error generating daily cost report: {str(e)}"
         print(error_msg)
-
-        # Send error notification
-        sns_client.publish(
-            TopicArn=sns_topic_arn,
-            Subject="⚠️ Daily Cost Report Error",
-            Message=f"Failed to generate daily cost report.\\n\\nError: {str(e)}"
-        )
-
         raise
 """
 
