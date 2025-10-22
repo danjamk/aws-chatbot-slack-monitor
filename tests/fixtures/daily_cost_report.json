@@ -1,0 +1,22 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:heartbeat-alerts",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "test-daily-cost-001",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:heartbeat-alerts",
+        "Subject": "Daily Cost Report",
+        "Message": "{\"AlarmName\":\"DailyCostReportAlarm\",\"AlarmDescription\":\"Daily AWS cost report (triggered by Lambda)\",\"AWSAccountId\":\"123456789012\",\"NewStateValue\":\"ALARM\",\"NewStateReason\":\"Daily Cost Report - Yesterday: $8.45 | Month-to-date: $245.30 | Forecast: $285.50\",\"StateChangeTime\":\"2025-10-22T08:00:00.000+0000\",\"Region\":\"US East (N. Virginia)\",\"OldStateValue\":\"OK\"}",
+        "Timestamp": "2025-10-22T08:00:00.000Z",
+        "SignatureVersion": "1",
+        "Signature": "test-signature",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/test.pem",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}

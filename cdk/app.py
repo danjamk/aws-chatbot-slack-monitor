@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-AWS Chatbot Slack Monitor - CDK Application Entry Point
+AWS Alert Intelligence System - CDK Application Entry Point
 
 This is the main entry point for the AWS CDK application.
 It loads configuration, sets up the CDK app, and instantiates all stacks.
+
+Phase 1: AI-powered alert analysis
+Phase 2: Interactive Slack bot (future)
 """
 
 import os
@@ -38,6 +41,7 @@ from stacks.budget_stack import BudgetStack
 from stacks.chatbot_stack import ChatbotStack
 from stacks.monitoring_stack import MonitoringStack
 from stacks.daily_cost_stack import DailyCostStack
+from stacks.alert_analyzer_stack import AlertAnalyzerStack  # Phase 1: AI analyzer
 
 # Instantiate SNS Stack (foundation for all notifications)
 sns_stack = SnsStack(
@@ -66,6 +70,17 @@ chatbot_stack = ChatbotStack(
     heartbeat_topic=sns_stack.get_heartbeat_topic(),
     env=aws_env,
 )
+
+# Instantiate Alert Analyzer Stack (Phase 1: AI-powered analysis)
+if config.get("ai_analysis", {}).get("enabled", False):
+    alert_analyzer_stack = AlertAnalyzerStack(
+        app,
+        f"{config['aws']['stack_prefix']}AlertAnalyzerStack",
+        config=config,
+        critical_topic=sns_stack.get_critical_topic(),
+        heartbeat_topic=sns_stack.get_heartbeat_topic(),
+        env=aws_env,
+    )
 
 # Instantiate Monitoring Stack (CloudWatch dashboard)
 monitoring_stack = MonitoringStack(

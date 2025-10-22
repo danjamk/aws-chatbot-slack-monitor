@@ -1,0 +1,22 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:critical-alerts",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "test-budget-warning-001",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:critical-alerts",
+        "Subject": "AWS Budget Alert: Monthly budget exceeded 80% threshold",
+        "Message": "{\"AlarmName\":\"MonthlyBudget-80%-Warning\",\"AlarmDescription\":\"Monthly budget has exceeded 80% threshold\",\"AWSAccountId\":\"123456789012\",\"NewStateValue\":\"ALARM\",\"NewStateReason\":\"Threshold Crossed: 1 datapoint [245.30 (22/10/25 10:00:00)] was greater than or equal to the threshold (240.00).\",\"StateChangeTime\":\"2025-10-22T10:00:00.000+0000\",\"Region\":\"US East (N. Virginia)\",\"OldStateValue\":\"OK\",\"Trigger\":{\"MetricName\":\"EstimatedCharges\",\"Namespace\":\"AWS/Billing\",\"StatisticType\":\"Statistic\",\"Statistic\":\"AVERAGE\",\"Unit\":null,\"Dimensions\":[],\"Period\":300,\"EvaluationPeriods\":1,\"ComparisonOperator\":\"GreaterThanOrEqualToThreshold\",\"Threshold\":240.0,\"TreatMissingData\":\"- TreatMissingData:                    notBreaching\",\"EvaluateLowSampleCountPercentile\":\"\"}}",
+        "Timestamp": "2025-10-22T10:00:00.000Z",
+        "SignatureVersion": "1",
+        "Signature": "test-signature",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/test.pem",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}

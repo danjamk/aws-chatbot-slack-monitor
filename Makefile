@@ -1,11 +1,11 @@
 # Use bash for all recipe commands
 SHELL := /bin/bash
 
-.PHONY: help install synth diff deploy deploy-secrets update destroy validate test format lint clean bootstrap
+.PHONY: help install synth diff deploy deploy-secrets update destroy validate test format lint clean bootstrap test-budget test-emr test-daily test-all-alerts
 
 # Default target - show help
 help:
-	@echo "AWS Chatbot Slack Monitor - Make Commands"
+	@echo "AWS Alert Intelligence System - Make Commands"
 	@echo ""
 	@echo "Setup & Installation:"
 	@echo "  make install         Install Python dependencies"
@@ -23,6 +23,10 @@ help:
 	@echo "  make validate        Test Slack notification channels"
 	@echo "  make test            Run unit tests"
 	@echo "  make test-cov        Run tests with coverage report"
+	@echo "  make test-budget     Send test budget warning alert (AI analysis)"
+	@echo "  make test-emr        Send test EMR failure alert (AI analysis)"
+	@echo "  make test-daily      Send test daily cost report (no AI analysis)"
+	@echo "  make test-all-alerts Send all test alerts"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make format          Format code with black"
@@ -171,3 +175,34 @@ logs:
 	@echo "⚠️  Log viewing not yet implemented"
 	@echo "View logs in AWS Console:"
 	@echo "  https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups"
+
+# Test AI Alert Analyzer with different alert types
+test-budget:
+	@echo "Sending test budget warning alert..."
+	python scripts/test-alerts.py budget-warning
+	@echo ""
+	@echo "✅ Test alert sent! Check your Slack #aws-critical-alerts channel."
+	@echo "Expected: AI-powered analysis with cost breakdown and recommendations"
+
+test-emr:
+	@echo "Sending test EMR failure alert..."
+	python scripts/test-alerts.py emr-failure
+	@echo ""
+	@echo "✅ Test alert sent! Check your Slack #aws-critical-alerts channel."
+	@echo "Expected: AI-powered analysis with EMR cluster details and failure diagnosis"
+
+test-daily:
+	@echo "Sending test daily cost report..."
+	@echo "NOTE: This should NOT trigger AI analysis (passthrough only)"
+	python scripts/test-alerts.py daily-report
+	@echo ""
+	@echo "✅ Test alert sent! Check your Slack #aws-heartbeat channel."
+	@echo "Expected: Simple formatted message with no AI analysis"
+
+test-all-alerts:
+	@echo "Sending all test alerts..."
+	python scripts/test-alerts.py all
+	@echo ""
+	@echo "✅ All test alerts sent! Check your Slack channels."
+	@echo "View Lambda logs:"
+	@echo "  aws logs tail /aws/lambda/AlertIntel-AlertAnalyzer --follow"

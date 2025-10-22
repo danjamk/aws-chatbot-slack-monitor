@@ -1,0 +1,23 @@
+{
+  "version": "0",
+  "id": "test-emr-failure-001",
+  "detail-type": "EMR Cluster State Change",
+  "source": "aws.emr",
+  "account": "123456789012",
+  "time": "2025-10-22T10:30:00Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:elasticmapreduce:us-east-1:123456789012:cluster/j-ABC123DEF456"
+  ],
+  "detail": {
+    "clusterId": "j-ABC123DEF456",
+    "name": "Data Processing Pipeline",
+    "state": "TERMINATED_WITH_ERRORS",
+    "message": "The cluster terminated with errors. See the stateChangeReason for more details.",
+    "stateChangeReason": "{\"code\":\"STEP_FAILURE\",\"message\":\"Step s-ABC123 failed with exit code 1\"}",
+    "applications": [
+      "Spark",
+      "Hadoop"
+    ]
+  }
+}
